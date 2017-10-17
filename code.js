@@ -1,112 +1,108 @@
-let margin = { top: 50, bottom: 50, left: 50, right: 50 }
-let width = 900 - margin.left - margin.right
-let height = 750 - margin.top - margin.bottom
+let margin = { top: 20, bottom: 20, left: 20, right: 20 }
+let width = 550 - margin.left - margin.right
+let height = 600 - margin.top - margin.bottom
 
-let households = d3.map()
-let testDataset1 = [18.0201157,59.3381068]
-let testDataset2 = [13.127785, 55.7067814]
-let testDataset3 = [16.020304, 57.83742]
+let customerTotal = d3.map()
+let colorDomain= [85,150,200,300,500,1000,1500,2000,5000]
+let color =  d3.scaleLinear()
+                .domain(colorDomain)
+                .range(d3.schemeYlGnBu[9])
 
-
-let svg = d3.select('body')
+let svg = d3.select('.map-holder')
     .append('svg')
         .attr('width', width + margin.left + margin.right)
         .attr('height', height + margin.top + margin.bottom)
 
-let g = svg
-    .append('g')
+let map = svg
+    .append('g').attr('class', 'map')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-        .attr('fill', 'white')
-        .attr('stroke', 'black')
-        .attr('stroke-width', '0.4')
 
-let tooltip = d3.select('body')
-    .append('div')
-        .attr('class', 'tooltip')
-        .style('opacity', '0')
-    .append('img')
-        .attr('src', 'visma_logo.jpg')
+// let legend = d3.select('svg')
+//     .append('g')
+//     .attr('class', 'legend')
+//     .attr('transform', 'translate(500, 100)')
+//     .selectAll('g')
+//     .data(colorDomain)
+//     .enter()
+
+let descriptionBox = d3.select('.description-box-holder')
 
 d3.queue()
     .defer(d3.json, 'sweden-counties.json')
-    .defer(d3.csv, 'sweden-stats.csv', function(d){
-        households.set(d.ID, +d.households)
-    })
+    .defer(d3.csv, 'sweden-testimonials.csv')
+    .defer(d3.csv, 'visma-stats.csv', function(d){ customerTotal.set(+d.ID, +d.customers)})
     .await(ready)
 
-function ready(error, sweden){
+function ready(error, sweden, testimonialList){
     if (error) throw error;
-    let colorDomain = [0, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000]
-
-    let color =  d3.scaleThreshold()
-                    .domain(colorDomain)
-                    .range(d3.schemeYlOrRd[9])
-
     let projection = d3.geoAlbers()
         .rotate([-25, 0])
         .fitSize([ width, height ], topojson.feature(sweden, sweden.objects.SWE_adm1))
 
     let path = d3.geoPath().projection(projection)
 
-    let map = g
+    map
         .selectAll('path')
         .data(topojson.feature(sweden, sweden.objects.SWE_adm1).features)
         .enter()
-        .append('path')
+        .append('path').attr('class', 'states')
             .attr('d', path)
-        // .attr('fill', d => color(households.get(d.properties.ID_1)))
+            .attr('fill', d => color(customerTotal.get(d.properties.ID_1)))
+
 
     let points = svg
         .append('g')
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
             .attr('class', 'bubbles')
         .selectAll('circle')
-        .data([testDataset1, testDataset2, testDataset3])
+        .data(testimonialList)
         .enter()
-        .append('circle')
-            .each(function(d,i){
-                if(i === 0 || i === 2){
-                    d3.select(this)
-                        .attr('class', 'retail')
-                } else {
-                    d3.select(this)
-                        .attr('class', 'gas')
-                }
-            })
-            .attr('cx', d => extractCoordinates(d)['x_coordinate'])
-            .attr('cy', d => extractCoordinates(d)['y_coordinate'])
-            .attr('r', 6)
-            .attr('fill', 'red')
-            .attr('display', 'none')
-            .attr('opacity', '0')
-            .on('mouseover', function(d){
-                let parent = tooltip.select(function() {return this.parentNode })
-                parent
-                    .transition(200)
-                    .style('opacity', '1')
-
-            })
-            .on('mousemove', function(d){
-                let parent = tooltip.select(function() { return this.parentNode })
-                parent
-                    .style('left', (d3.mouse(this)[0]) + 'px')
-                    .style('top', (d3.mouse(this)[1]) + 'px')
-            })
-            .on('mouseout', function(d){
-                let parent = tooltip.select(function() { return this.parentNode })
-                parent
-                    .transition(200)
-                    .attr('display', 'none')
-            })
+        .append('image').attr('class', 'pin')
+            .attr('height', '20').attr('width', '20')
+            .attr('href', 'media/pin.svg')
+            .attr('x', d => extractCoordinates(d)['x_coordinate'] - 5)
+            .attr('y', d => extractCoordinates(d)['y_coordinate'] - 7)
+            .on('mouseover', handleMouseOn)
+            .on('mouseout', handleMouseOut)
 
 
-    function extractCoordinates(coordinates){
-        let projectedValue = projection([coordinates[0], coordinates[1]])
+    function extractCoordinates({ Long, Lat }){
+        let projectedValue = projection([Long, Lat])
         return {
             x_coordinate: projectedValue[0],
             y_coordinate: projectedValue[1]
         }
     }
+}
+
+
+function handleMouseOn(d){
+    d3.select(this)
+        .transition()
+            .duration(300)
+            .attr('width', '32').attr('height', '32')
+    d3.select('.description-box-holder')
+        .transition().duration(750)
+            .style('opacity', '1')
+    descriptionBox
+        .html("")
+        .append('h2')
+            .html(d.Company)
+            .select(function(){ return this.parentNode })
+        .append('img')
+            .attr('src', 'media/' + d.Image)
+            .select(function(){ return this.parentNode })
+        .append('p')
+            .html(d.Testimonial)
+}
+
+function handleMouseOut(d){
+    d3.select(this)
+        .transition(300)
+            .attr('width', '20').attr('height', '20')
+    descriptionBox
+        .transition().duration(750)
+            .style('opacity', '0')
 }
 
 function handleChange(checkbox){
@@ -131,3 +127,31 @@ function handleChange(checkbox){
 
     }
 }
+
+// let tooltip = d3.select('body')
+//     .append('div').attr('class', 'tooltip')
+//         .style('opacity', '0')
+
+// tooltip
+//     .style('opacity', '1')
+//     .html('<b>' + d.Company + '</p>')
+// tooltip
+//     .style('opacity', '0')
+// .on('mouseover', function(d){
+//     let parent = tooltip.select(function() {return this.parentNode })
+//     parent
+//         .transition(200)
+//         .style('opacity', '1')
+// })
+// .on('mousemove', function(d){
+//     let parent = tooltip.select(function() { return this.parentNode })
+//     parent
+//         .style('left', (d3.mouse(this)[0]) + 'px')
+//         .style('top', (d3.mouse(this)[1]) + 'px')
+// })
+// .on('mouseout', function(d){
+//     let parent = tooltip.select(function() { return this.parentNode })
+//     parent
+//         .transition(200)
+//         .attr('display', 'none')
+// })

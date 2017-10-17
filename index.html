@@ -7,6 +7,33 @@
   <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
   <style>
 
+  body{
+      background-color: white;
+  }
+
+    .map-header{
+        margin: 20px 0;
+    }
+    
+    .map{
+        fill: white;
+    }
+
+    .states {
+        stroke: none;
+        stroke-linejoin: round;
+    }
+
+    .bubbles image {
+        text-anchor: middle;
+    }
+
+    /*.point{
+        fill: red;
+        display: block;
+        opacity: 1;
+    }*/
+
     .selectBox{
         margin: 20px;
     }
@@ -23,15 +50,47 @@
         pointer-events: none;
     }
 
+    .description-box-holder{
+        /*border: 2px solid;*/
+        margin-top: 30px;
+        height: 500px;
+        border-radius: 4px;
+        pointer-events: none;
+        color: black;
+        opacity: 0;
+    }
+
+    .description-box-holder p{
+        font-size: 18px;
+    }
+
+    .description-box-holder img{
+        border-radius: 50%;
+        margin: 20px;
+    }
+
   </style>
 </head>
 <body>
-    <div class="text-center selectBox">
+    <!-- <div class="text-center selectBox">
         <label for="Retail"> Retail </label>
         <input name="Retail" type="checkbox" value="retail" onchange="handleChange(this)">
         <label for="Gas"> Gas </label>
         <input name="Gas" type="checkbox" value="gas" onchange="handleChange(this)">
+    </div> -->
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12 text-center map-header">
+                <h1> Clients and Testimonials </h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="map-holder col-xs-12 col-sm-6"></div>
+            <div class="description-box-holder text-center col-xs-12 col-sm-6 ">
+            </div>
+        </div>
     </div>
+
     <script src="code.js"></script>
 </body>
 </html>
